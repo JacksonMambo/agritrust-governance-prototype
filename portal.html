@@ -1,311 +1,115 @@
 <!doctype html>
-<html lang="en"><head>
-<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>AgriTrust Portal v2</title>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>AgriTrust – Governance Infrastructure Prototype</title>
 <link rel="stylesheet" href="assets/styles.css"/>
-</head><body>
+</head>
+
+<body>
 <div class="wrap">
+
+  <!-- ================= HEADER ================= -->
   <div class="top">
-    <div class="brand"><div class="logo"></div>
-      <div><h1>AgriTrust Portal <span class="muted">v2</span></h1>
-      <div class="sub">Deliveries · disputes · evidence SHA-256 · invoice pipeline · regulator trace · ledger verify</div></div>
-    </div>
-    <div class="row">
-      <a class="pill" href="index.html"><b>Home</b></a>
-      <span class="pill"><b>Role</b>: <span id="roleName">—</span></span>
-      <span class="pill"><b>User</b>: <span id="userName">—</span></span>
-    </div>
-  </div>
-
-  <div class="portal-grid">
-    <nav>
-      <div class="navhd"><div class="k">Navigation</div><div class="t">Portal pages</div></div>
-      <div class="navlist" id="nav">
-        <div class="navitem" data-pane="dashboard"><span class="dot"></span>Dashboard</div>
-        <div class="navitem" data-pane="newdelivery"><span class="dot"></span>New delivery</div>
-        <div class="navitem" data-pane="detail"><span class="dot"></span>Delivery detail</div>
-        <div class="navitem" data-pane="regulator"><span class="dot"></span>Regulator trace</div>
-        <div class="navitem" data-pane="verify"><span class="dot"></span>Ledger verify</div>
-        <div class="navitem" data-pane="governance"><span class="dot"></span>Governance</div>
+    <div class="brand">
+      <div class="logo"></div>
+      <div>
+        <h1>AgriTrust: Governance Infrastructure for Agrifood Risk & Payment Discipline</h1>
+        <div class="sub">
+          Demonstration prototype accompanying the Valar EMBA Capstone (2026). 
+          This interface operationalises structured delivery capture, dispute management,
+          invoice sequencing, regulator traceability, and tamper-evident ledger verification
+          within deferred-payment agrifood supply chains.
+        </div>
       </div>
-    </nav>
+    </div>
 
-    <main>
-      <section class="pane" id="pane-dashboard">
-        <h2 style="margin:0 0 8px">Dashboard</h2>
-        <p class="muted" style="margin-top:0">KPIs + delivery table. Actions vary by role.</p>
-        <div class="row" id="kpiRow"></div>
-
-        <div class="card" style="margin-top:12px">
-          <div class="row" style="justify-content:space-between;align-items:center">
-            <h3 style="margin:0">Deliveries</h3>
-            <div class="row">
-              <button class="btn ghost" id="btnSeed">Reset demo data</button>
-              <button class="btn" id="btnGoNew">Create delivery</button>
-            </div>
-          </div>
-          <div class="hr"></div>
-          <table><thead>
-            <tr><th>Delivery</th><th>Product</th><th>Qty</th><th>Delivery Date</th><th>Due Date</th><th>Status</th><th>Flags</th><th>Action</th></tr>
-          </thead><tbody id="deliveriesTbody"></tbody></table>
-          <div class="small muted" style="margin-top:10px">Status flow: DELIVERED → CONFIRMED → DISPUTED/REJECTED → INVOICE_SUBMITTED → INVOICE_APPROVED → PAYMENT_SCHEDULED → PAID.</div>
-        </div>
-      </section>
-
-      <section class="pane" id="pane-newdelivery">
-        <h2 style="margin:0 0 8px">New delivery</h2>
-        <p class="muted" style="margin-top:0">Farmer/Admin only. Creates delivery + ledger event.</p>
-
-        <div class="split">
-          <div class="card">
-            <h3 style="margin-top:0">Delivery form</h3>
-            <div class="row">
-              <div style="flex:1"><label>Buyer</label>
-                <select id="f_buyer">
-                  <option value="U-BUY-01">U-BUY-01 — Retail DC</option>
-                  <option value="U-BUY-02">U-BUY-02 — Wholesaler</option>
-                  <option value="U-BUY-03">U-BUY-03 — Feeding Scheme</option>
-                </select>
-              </div>
-              <div style="width:170px"><label>Terms (days)</label><input id="f_terms" type="number" value="30"/></div>
-            </div>
-
-            <div class="row">
-              <div style="flex:1"><label>Product</label><input id="f_product" value="Spinach (bundles)"/></div>
-              <div style="width:170px"><label>Quantity</label><input id="f_qty" type="number" value="200"/></div>
-              <div style="width:150px"><label>UoM</label><input id="f_uom" value="bundles"/></div>
-            </div>
-
-            <div class="row">
-              <div style="flex:1"><label>Delivery date</label><input id="f_date" type="date"/></div>
-              <div style="flex:1"><label>Time zone</label><input id="f_tz" value="Africa/Johannesburg"/></div>
-            </div>
-
-            <div class="hr"></div>
-            <h3 style="margin:0 0 8px;font-size:14px">GS1 / EPCIS-like fields (optional)</h3>
-            <div class="row">
-              <div style="flex:1"><label>GTIN (14)</label><input id="f_gtin" placeholder="00012345678905"/></div>
-              <div style="flex:1"><label>Lot / Batch</label><input id="f_lot" placeholder="LOT-2026-02-11-A"/></div>
-              <div style="flex:1"><label>SSCC (18)</label><input id="f_sscc" placeholder="000123456789012345"/></div>
-            </div>
-            <div class="row">
-              <div style="flex:1"><label>GLN Farmer (13)</label><input id="f_gln_farmer" placeholder="1234567890123"/></div>
-              <div style="flex:1"><label>GLN Buyer (13)</label><input id="f_gln_buyer" placeholder="9876543210987"/></div>
-            </div>
-
-            <div class="row" style="margin-top:12px">
-              <button class="btn" id="btnCreateDelivery">Create delivery</button>
-              <button class="btn ghost" id="btnCancelNew">Cancel</button>
-            </div>
-            <div class="small muted" style="margin-top:10px">Parity: POST /deliveries → ledger append_event("DELIVERY_CREATED").</div>
-          </div>
-
-          <div class="card">
-            <h3 style="margin-top:0">Preview payload</h3>
-            <div class="muted small">What will be recorded to the ledger.</div>
-            <div class="hr"></div>
-            <pre class="mono small" id="previewJson" style="white-space:pre-wrap;margin:0"></pre>
-            <div class="row" style="margin-top:10px">
-              <button class="btn ghost" id="btnRefreshPreview">Refresh preview</button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="pane" id="pane-detail">
-        <h2 style="margin:0 0 8px">Delivery detail</h2>
-        <p class="muted" style="margin-top:0">Confirm/dispute, evidence SHA-256, invoice pipeline, and ledger events.</p>
-        <div class="row" style="margin:10px 0 12px">
-          <button class="btn" id="btnAuditPack">Download Audit Pack (HTML)</button>
-          <button class="btn ghost" id="btnRecallDrill">Open Recall Drill (Simulation)</button>
-        </div>
-        
-
-        <div class="split">
-          <div class="card">
-            <div class="row" style="justify-content:space-between;align-items:flex-start">
-              <div>
-                <h3 style="margin:0">Delivery <span class="mono" id="d_ref">—</span></h3>
-                <div class="muted small">Status: <span id="d_status" class="badge warn">—</span></div>
-              </div>
-            </div>
-
-            <div class="hr"></div>
-            <div class="mono small" id="d_summary">—</div>
-
-            <div class="hr"></div>
-            <h3 style="margin:0 0 8px;font-size:14px">Dispute</h3>
-            <div id="d_dispute" class="mono small muted">No dispute recorded.</div>
-
-            <div class="hr"></div>
-            <h3 style="margin:0 0 8px;font-size:14px">Evidence SHA-256</h3>
-            <div class="mono small" id="d_evidence">—</div>
-
-            <div class="hr"></div>
-            <h3 style="margin:0 0 8px;font-size:14px">Invoice & payment pipeline</h3>
-            <div class="mono small" id="d_invoice">—</div>
-
-            <div class="callout small muted" style="margin-top:12px">
-              <b>Disclosure:</b> PDFs are generated server-side in Flask using ReportLab. This static prototype demonstrates content structure and verification logic.
-            </div>
-          </div>
-
-          <div class="card">
-            <h3 style="margin-top:0">Actions</h3>
-            <p class="muted small">Buyer/Admin can confirm, dispute, resolve, invoice, schedule, mark paid. Regulator/Admin can verify.</p>
-
-            <div class="row">
-              <button class="btn secondary" id="btnConfirm">Confirm</button>
-              <button class="btn ghost" id="btnDispute">Open dispute</button>
-            </div>
-
-            <div class="row" style="margin-top:10px">
-              <button class="btn ghost" id="btnUpload">Upload evidence (simulate)</button>
-              <button class="btn ghost" id="btnResolve">Resolve dispute</button>
-            </div>
-
-            <div class="hr"></div>
-
-            <div class="row">
-              <button class="btn" id="btnSubmitInvoice">Submit invoice</button>
-              <button class="btn ghost" id="btnApproveInvoice">Approve</button>
-            </div>
-
-            <div class="row" style="margin-top:10px">
-              <button class="btn ghost" id="btnSchedule">Schedule payment</button>
-              <button class="btn secondary" id="btnPaid">Mark paid</button>
-            </div>
-
-            <div class="hr"></div>
-
-            <div class="row">
-              <button class="btn ghost" id="btnGotoVerify">Verify ledger</button>
-              <button class="btn ghost" id="btnBackDash">Back</button>
-            </div>
-
-            <div class="hr"></div>
-            <h3 style="margin:0 0 8px;font-size:14px">Ledger events</h3>
-            <table><thead><tr><th>ts</th><th>type</th><th>prev</th><th>hash</th></tr></thead><tbody id="eventsTbody"></tbody></table>
-          </div>
-        </div>
-      </section>
-
-      <section class="pane" id="pane-regulator">
-        <h2 style="margin:0 0 8px">Regulator trace</h2>
-        <p class="muted" style="margin-top:0">Search by GTIN/Lot/GLN; paste QR JSON to verify latest_hash vs ledger.</p>
-
-        <div class="split">
-          <div class="card">
-            <h3 style="margin-top:0">Filters</h3>
-            <div class="row">
-              <div style="flex:1"><label>GTIN</label><input id="r_gtin" placeholder="14 digits"/></div>
-              <div style="flex:1"><label>Lot</label><input id="r_lot" placeholder="LOT-..."/></div>
-            </div>
-            <div class="row">
-              <div style="flex:1"><label>GLN Farmer</label><input id="r_gln_farmer" placeholder="13 digits"/></div>
-              <div style="flex:1"><label>GLN Buyer</label><input id="r_gln_buyer" placeholder="13 digits"/></div>
-            </div>
-            <div class="row" style="margin-top:10px">
-              <button class="btn" id="btnSearch">Search</button>
-              <button class="btn ghost" id="btnResetFilters">Reset</button>
-              <button class="btn ghost" id="btnExportCsv">Export CSV (concept)</button>
-            </div>
-
-            <div class="hr"></div>
-            <h3 style="margin:0 0 8px;font-size:14px">QR verify (paste JSON)</h3>
-            <textarea id="r_qr" placeholder='{"delivery_ref":"D00007","latest_hash":"..."}'></textarea>
-            <div class="row" style="margin-top:10px">
-              <button class="btn secondary" id="btnVerifyQR">Verify QR vs ledger</button>
-              <button class="btn ghost" id="btnUseCurrentQR">Use current delivery QR</button>
-            </div>
-          </div>
-
-          <div class="card">
-            <h3 style="margin-top:0">Results</h3>
-            <table><thead><tr><th>Delivery</th><th>GTIN</th><th>Lot</th><th>Farmer GLN</th><th>Buyer GLN</th><th>Status</th><th>Action</th></tr></thead><tbody id="regResults"></tbody></table>
-            <div class="hr"></div>
-            <pre class="mono small" id="qrResult" style="white-space:pre-wrap;margin:0">No QR verification run yet.</pre>
-          </div>
-        </div>
-      </section>
-
-      <section class="pane" id="pane-verify">
-        <h2 style="margin:0 0 8px">Ledger verify</h2>
-        <p class="muted" style="margin-top:0">PASS/FAIL chain verification. Tamper mode demonstrates a failure.</p>
-
-        <div class="split">
-          <div class="card">
-            <h3 style="margin-top:0">Run verification</h3>
-            <div class="row">
-              <div style="flex:1"><label>Delivery ref</label><input id="v_ref" class="mono"/></div>
-              <div style="width:220px"><label>Mode</label>
-                <select id="v_mode">
-                  <option value="normal">Normal verify</option>
-                  <option value="tamper">Simulate tamper (FAIL)</option>
-                </select>
-              </div>
-            </div>
-            <div class="row" style="margin-top:10px">
-              <button class="btn" id="btnVerify">Verify chain</button>
-              <button class="btn ghost" id="btnVerifyPdf">Verify PDF (concept)</button>
-            </div>
-          </div>
-
-          <div class="card">
-            <h3 style="margin-top:0">Report</h3>
-            <pre class="mono small" id="verifyReport" style="white-space:pre-wrap;margin:0">Ready.</pre>
-          </div>
-        </div>
-      </section>
-
-      <section class="pane" id="pane-governance">
-        <h2 style="margin:0 0 8px">Governance</h2>
-        <p class="muted" style="margin-top:0">Roles, POPIA alignment, auditability, and “records ≠ certification” disclaimers.</p>
-
-        <div class="split">
-          <div class="card">
-            <h3 style="margin-top:0">Roles & permissions</h3>
-            <table><thead><tr><th>Role</th><th>Can view</th><th>Can write</th><th>Notes</th></tr></thead>
-              <tbody>
-                <tr><td>FARMER</td><td>Own deliveries</td><td>Create delivery</td><td class="muted">Low-data UX</td></tr>
-                <tr><td>BUYER</td><td>Supplier transactions</td><td>Confirm/dispute/invoice/paid</td><td class="muted">ERP-ready</td></tr>
-                <tr><td>REGULATOR</td><td>Read-only audit trail</td><td>None</td><td class="muted">Lawful basis</td></tr>
-                <tr><td>ADMIN</td><td>All</td><td>All</td><td class="muted">Oversight</td></tr>
-              </tbody>
-            </table>
-
-            <div class="hr"></div>
-            <ul class="muted" style="margin:0;padding-left:18px">
-              <li>Auditability supports recall drills (retrieval speed)</li>
-              <li>Evidence hashing deters tampering</li>
-              <li>Certification anchoring is a future module</li>
-              <li><b>Disclaimer:</b> digital logs do not replace inspection</li>
-            </ul>
-          </div>
-
-          <div class="card">
-            <h3 style="margin-top:0">Flask route mapping</h3>
-            <div class="mono small">
-              POST /deliveries · /confirm · /dispute · /resolve-dispute<br/>
-              POST /uploads/.../dispute-evidence (SHA-256)<br/>
-              POST /payments/... invoice pipeline<br/>
-              GET /exports/deliveries/&lt;ref&gt;.pdf (audit pack)<br/>
-              GET /exports/verify-ledger/&lt;ref&gt; (PASS/FAIL)<br/>
-              GET /exports/regulator-results.csv
-            </div>
-          </div>
-        </div>
-      </section>
-    </main>
+    <div class="row">
+      <span class="pill"><b>Environment</b>: Public Demonstration Build</span>
+      <span class="pill"><b>Version</b>: v7.0</span>
+    </div>
   </div>
+
+  <!-- ================= ROLE SELECTION ================= -->
+  <div class="card">
+    <h2 style="margin:0 0 10px;font-size:16px">Role-Based Access</h2>
+    <div class="grid">
+
+      <!-- Farmer -->
+      <div class="role">
+        <h2>Farmer</h2>
+        <div class="muted">
+          Record deliveries (including GTIN, Lot, SSCC and GLN identifiers) and monitor
+          payment due dates within structured commercial terms.
+        </div>
+        <div class="row" style="margin-top:12px">
+          <a class="btn" href="portal.html#pane=dashboard&role=FARMER">
+            Open Farmer Portal
+          </a>
+        </div>
+      </div>
+
+      <!-- Buyer -->
+      <div class="role">
+        <h2>Buyer</h2>
+        <div class="muted">
+          Confirm or dispute deliveries, anchor supporting evidence hashes,
+          and manage invoice and payment progression.
+        </div>
+        <div class="row" style="margin-top:12px">
+          <a class="btn secondary" href="portal.html#pane=dashboard&role=BUYER">
+            Open Buyer Dashboard
+          </a>
+        </div>
+      </div>
+
+      <!-- Regulator -->
+      <div class="role">
+        <h2>Regulator</h2>
+        <div class="muted">
+          Conduct read-only traceability searches (GTIN/Lot/GLN), verify QR payloads
+          against ledger hash continuity, and export structured oversight records.
+        </div>
+        <div class="row" style="margin-top:12px">
+          <a class="btn ghost" href="portal.html#pane=regulator&role=REGULATOR">
+            Open Regulator Portal
+          </a>
+        </div>
+      </div>
+
+      <!-- Admin -->
+      <div class="role">
+        <h2>Administrator</h2>
+        <div class="muted">
+          Oversight environment enabling full workflow interaction for demonstration
+          and validation purposes.
+        </div>
+        <div class="row" style="margin-top:12px">
+          <a class="btn ghost" href="portal.html#pane=dashboard&role=ADMIN">
+            Open Administrative View
+          </a>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ================= DISCLOSURE ================= -->
+    <div class="callout small muted" style="margin-top:18px">
+      <b>Disclosure:</b> This prototype operates entirely in-browser for examiner accessibility.
+      Database persistence, authentication, file uploads, and PDF generation are simulated.
+      The production-aligned implementation exists in a near-deployment Flask architecture.
+      Digital records support coordination and audit visibility but do not replace regulatory inspection.
+    </div>
+
+  </div>
+
+  <!-- ================= FOOTER ================= -->
+  <div style="margin-top:24px;text-align:center;font-size:11px;color:#6b7280">
+    © 2026 AgriTrust. All rights reserved.<br/>
+    Created for Valar EMBA Capstone 2026 by Jackson Mambozoukuni.
+  </div>
+
 </div>
-
-<div class="toast" id="toast"></div>
-<script src="assets/js/ui.js"></script>
-
-<div style="margin-top:18px;text-align:center;font-size:11px;color:#6b7280">
-  © 2026 AgriTrust. All rights reserved.<br/>
-  Created for Valar Capstone 2026 by Jackson Mambozoukuni.
-</div>
-
-</body></html>
+</body>
+</html>
