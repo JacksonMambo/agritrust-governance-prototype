@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>AgriTrust Recall Drill Simulation</title>
+  <link rel="stylesheet" href="assets/styles.css"/>
+</head>
+<body>
+<div class="card">
+  <div class="row" style="justify-content:space-between;align-items:flex-start">
+    <div>
+      <h1>Recall Drill Simulation</h1>
+      <div class="muted">Demonstrates rapid trace-back workflow (public health / compliance readiness).</div>
+    </div>
+    <div class="badge">Scenario: Listeriosis-style response</div>
+  </div>
+  <div class="hr"></div>
+
+  <div class="callout">
+    <b>Objective:</b> Identify affected lots quickly using GTIN/Lot/GLN identifiers and produce an audit-ready report.
+    <div class="small muted" style="margin-top:6px">This simulation complements the Audit Pack and Ledger Verification features.</div>
+  </div>
+
+  <div class="hr"></div>
+
+  <h3>Step 1: Enter a trace query</h3>
+  <div class="row">
+    <div style="flex:1">
+      <label>GTIN</label>
+      <input id="gtin" placeholder="e.g., 00012345678905" value="00012345678905"/>
+    </div>
+    <div style="flex:1">
+      <label>Lot / Batch</label>
+      <input id="lot" placeholder="e.g., LOT-2026-02-11-A" value="LOT-2026-02-11-A"/>
+    </div>
+    <div style="flex:1">
+      <label>GLN Buyer</label>
+      <input id="gln" placeholder="e.g., 9876543210987" value="9876543210987"/>
+    </div>
+  </div>
+  <div class="row" style="margin-top:10px">
+    <button class="btn" id="run">Run Trace</button>
+    <button class="btn ghost" id="export">Export Drill Summary (TXT)</button>
+  </div>
+
+  <div class="hr"></div>
+
+  <h3>Step 2: Results (simulated)</h3>
+  <div class="row">
+    <div class="card" style="flex:1">
+      <div class="muted small">Target trace time</div>
+      <div class="num" style="font-size:22px;font-weight:900">&lt; 5 minutes</div>
+      <div class="muted small">Benchmark used in pilot KPIs</div>
+    </div>
+    <div class="card" style="flex:1">
+      <div class="muted small">Simulated retrieval time</div>
+      <div class="num" id="time" style="font-size:22px;font-weight:900">—</div>
+      <div class="muted small">Based on query complexity</div>
+    </div>
+    <div class="card" style="flex:1">
+      <div class="muted small">Outcome</div>
+      <div class="num" id="outcome" style="font-size:22px;font-weight:900">—</div>
+      <div class="muted small">PASS if identifiers match sample delivery</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:12px">
+    <h3 style="margin-top:0">Trace Narrative</h3>
+    <pre class="mono" id="narrative" style="white-space:pre-wrap;margin:0">Click “Run Trace” to generate a trace narrative.</pre>
+  </div>
+
+  <div class="disclaimer" style="margin-top:12px">
+    This simulation demonstrates workflow readiness only. It does not certify product safety and does not replace inspection.
+  </div>
+
+  <div style="margin-top:20px;text-align:center;font-size:11px;color:#6b7280">
+    © 2026 AgriTrust. All rights reserved.<br/>
+    Created for Valar Capstone 2026 by Jackson Mambozoukuni.
+  </div>
+</div>
+
+<script>
+const sample = {
+  gtin:"00012345678905",
+  lot:"LOT-2026-02-11-A",
+  gln:"9876543210987",
+  delivery_ref:"D00007",
+  supplier:"U-FARM-01",
+  product:"Spinach",
+  qty:"200 bundles"
+};
+
+function randTime(){
+  const ms = Math.floor(40 + Math.random()*220); // seconds simulated
+  return ms;
+}
+
+document.getElementById("run").addEventListener("click", ()=>{
+  const gtin = document.getElementById("gtin").value.trim();
+  const lot = document.getElementById("lot").value.trim();
+  const gln = document.getElementById("gln").value.trim();
+
+  const seconds = randTime();
+  document.getElementById("time").innerText = seconds + " seconds";
+
+  const match = (gtin===sample.gtin && lot===sample.lot && gln===sample.gln);
+  document.getElementById("outcome").innerText = match ? "PASS ✅" : "PARTIAL ⚠️";
+
+  const lines = [];
+  lines.push("AgriTrust Recall Drill — Trace Narrative");
+  lines.push("======================================");
+  lines.push("Query:");
+  lines.push("  GTIN: " + gtin);
+  lines.push("  LOT:  " + lot);
+  lines.push("  GLN:  " + gln);
+  lines.push("");
+  if(match){
+    lines.push("Result: MATCH FOUND");
+    lines.push("  Delivery Ref: " + sample.delivery_ref);
+    lines.push("  Supplier:     " + sample.supplier);
+    lines.push("  Product:      " + sample.product);
+    lines.push("  Quantity:     " + sample.qty);
+    lines.push("");
+    lines.push("Action: Issue recall notification to all downstream nodes linked to buyer GLN " + gln + ".");
+    lines.push("Action: Download Audit Pack + Ledger Verification for evidentiary chain.");
+  } else {
+    lines.push("Result: NO EXACT MATCH");
+    lines.push("Action: Expand filters or query by partial identifiers.");
+    lines.push("Action: Request additional batch identifiers from buyer receiving records.");
+  }
+  lines.push("");
+  lines.push("Simulated retrieval time: " + seconds + " seconds");
+  lines.push("Governance note: speed of retrieval supports public health response.");
+  document.getElementById("narrative").innerText = lines.join("\n");
+});
+
+document.getElementById("export").addEventListener("click", ()=>{
+  const txt = document.getElementById("narrative").innerText;
+  const blob = new Blob([txt], {type:"text/plain"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href=url;
+  a.download="AgriTrust_Recall_Drill_Summary.txt";
+  a.click();
+  URL.revokeObjectURL(url);
+});
+</script>
+</body></html>

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>AgriTrust HTML Prototype v2</title>
+<link rel="stylesheet" href="assets/styles.css"/>
+</head><body>
+<div class="wrap">
+  <div class="top">
+    <div class="brand"><div class="logo"></div>
+      <div><h1>AgriTrust HTML Prototype v2</h1>
+      <div class="sub">Static, shareable demo (HTML/CSS/JS) with feature parity to your near-production Flask build: deliveries, disputes, evidence SHA-256 hashing, invoice pipeline, regulator trace & ledger verification (PASS/FAIL).</div></div>
+    </div>
+    <div class="row">
+      <span class="pill"><b>Mode</b>: Local demo</span>
+      <span class="pill"><b>Build</b>: 2026-02-20</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 style="margin:0 0 8px;font-size:16px">Choose a role</h2>
+    <div class="grid">
+      <div class="role">
+        <h2>Farmer</h2>
+        <div class="muted">Create deliveries (incl. GTIN/LOT/SSCC/GLN) and track due dates.</div>
+        <div class="row" style="margin-top:12px">
+          <a class="btn" href="portal.html#pane=dashboard&role=FARMER">Open Farmer Portal</a>
+        </div>
+      </div>
+      <div class="role">
+        <h2>Buyer</h2>
+        <div class="muted">Confirm/dispute, upload evidence hash, run invoice/payment pipeline.</div>
+        <div class="row" style="margin-top:12px">
+          <a class="btn secondary" href="portal.html#pane=dashboard&role=BUYER">Open Buyer Dashboard</a>
+        </div>
+      </div>
+      <div class="role">
+        <h2>Regulator</h2>
+        <div class="muted">Read-only trace filters; verify QR payload vs ledger latest_hash; export CSV.</div>
+        <div class="row" style="margin-top:12px">
+          <a class="btn ghost" href="portal.html#pane=regulator&role=REGULATOR">Open Regulator Portal</a>
+        </div>
+      </div>
+      <div class="role">
+        <h2>Admin</h2>
+        <div class="muted">Oversight role; can perform all actions for demo/testing.</div>
+        <div class="row" style="margin-top:12px">
+          <a class="btn ghost" href="portal.html#pane=dashboard&role=ADMIN">Open Admin</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout small muted" style="margin-top:14px">
+      <b>Disclosure:</b> This is a static prototype. Backend functions (DB, JWT, uploads, PDF generation) are simulated in-browser for easy sharing. Production implementation exists in Flask.
+    </div>
+  </div>
+</div>
+</body></html>
