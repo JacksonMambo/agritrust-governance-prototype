@@ -4,7 +4,7 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>AgriTrust Portal – Governance Prototype</title>
-  <link rel="stylesheet" href="assets/styles.css?v=7.2"/>
+  <link rel="stylesheet" href="assets/styles.css?v=7.3"/>
 </head>
 
 <body>
@@ -50,202 +50,6 @@
     <!-- Main -->
     <main>
 
-      function downloadAuditPackHTML(){
-  const d = currentDelivery();
-  if(!d){
-    showToast("No delivery selected.");
-    return;
-  }
-
-  const ref = d.delivery_ref;
-
-  const events = state.ledger
-    .filter(e => e.delivery_ref === ref)
-    .slice()
-    .reverse();
-
-  const latestHash = events.length ? (events[0].hash || "") : "";
-  const verificationCode = (latestHash || "NOHASH").slice(0,10).toUpperCase();
-  const stampId = `${ref}-${verificationCode}`;
-
-  (async ()=>{
-    let status = "PASS";
-    try{
-      const report = await verifyChain(ref, false);
-      status = report.status || "PASS";
-    }catch(e){
-      status = "PASS";
-    }
-
-    const badgeClass = (status === "PASS") ? "good" : "bad";
-    const badgeText  = (status === "PASS") ? "PASS ✅" : "FAIL ❌";
-
-    const rows = events.slice(0,30).map(e => `
-      <tr>
-        <td>${String(e.ts||"").slice(0,19)}</td>
-        <td>${e.event_type||""}</td>
-        <td>${String(e.prev_hash||"").slice(0,16)}</td>
-        <td>${String(e.hash||"").slice(0,16)}</td>
-      </tr>
-    `).join("");
-
-    const chainBlocks = events.slice(0,10).reverse().map((e,i,arr)=>`
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px">
-        <div style="border:1px solid #e5e7eb;border-radius:12px;padding:8px 10px;background:#fff;font-family:monospace;font-size:11px;min-width:200px">
-          <div><b>#${i+1}</b> ${e.event_type||""}</div>
-          <div style="color:#6b7280;font-family:Arial;font-size:10px">prev: ${(e.prev_hash||"-").slice(0,10)}</div>
-          <div style="color:#6b7280;font-family:Arial;font-size:10px">hash: ${(e.hash||"-").slice(0,10)}</div>
-        </div>
-        ${i < arr.length-1 ? `<div style="font-size:18px;color:#6b7280">→</div>` : ``}
-      </div>
-    `).join("");
-
-    const qrPayload = {
-      schema_version: "1.0",
-      delivery_ref: ref,
-      latest_hash: latestHash,
-      gtin: d.gtin || null,
-      lot_number: d.lot_number || null,
-      sscc: d.sscc || null,
-      gln_farmer: d.gln_farmer || null,
-      gln_buyer: d.gln_buyer || null,
-      delivery_date: d.delivery_date || null,
-      due_date: d.due_date || null,
-      status: d.status || null
-    };
-
-    const verificationNumber = "VR" + Math.floor(Math.random()*1e10).toString().padStart(10,"0");
-
-    // IMPORTANT: NO <script> tags in this HTML string (prevents breaking the portal page)
-    const html = `<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8"/>
-  <title>AgriTrust Audit Pack — ${ref}</title>
-  <style>
-    body{font-family:Arial;margin:0;background:#f7f7fb;color:#111}
-    .page{max-width:980px;margin:22px auto;background:#fff;border:1px solid #e5e7eb;border-radius:16px;
-          box-shadow:0 12px 40px rgba(0,0,0,.08);padding:18px;position:relative}
-    h1{margin:0;font-size:20px}
-    .muted{color:#6b7280;font-size:12px}
-    .top{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
-    .stamp{border:1px solid #e5e7eb;border-radius:14px;padding:10px;min-width:260px}
-    .badge{display:inline-block;padding:6px 10px;border-radius:999px;font-weight:700}
-    .good{background:#d1fae5;color:#065f46;border:1px solid #34d399}
-    .bad{background:#fee2e2;color:#991b1b;border:1px solid #fb7185}
-    .hr{height:1px;background:#e5e7eb;margin:14px 0}
-    .kv{display:grid;grid-template-columns:220px 1fr;gap:8px;margin-top:12px}
-    .kv div{padding:8px;border:1px solid #eef2f7;border-radius:12px;background:#fafafa;font-size:12px}
-    table{width:100%;border-collapse:collapse;margin-top:12px}
-    th,td{border:1px solid #eef2f7;padding:8px;font-size:12px;text-align:left;vertical-align:top}
-    th{background:#f3f4f6}
-    pre{white-space:pre-wrap;background:#f9fafb;border:1px solid #eef2f7;border-radius:12px;padding:10px;font-size:11px}
-    .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
-    .btn{padding:10px 12px;border:1px solid #e5e7eb;border-radius:10px;background:#111;color:#fff;cursor:pointer}
-    .btn.secondary{background:#4f46e5;border-color:#4f46e5}
-    .watermark{position:fixed;top:40%;left:50%;transform:translate(-50%,-50%) rotate(-30deg);
-               font-size:80px;color:rgba(0,0,0,0.04);font-weight:bold;pointer-events:none}
-    .seal{position:absolute;top:18px;right:18px;border:2px solid #111;border-radius:50%;width:120px;height:120px;
-          display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;text-align:center}
-    .disclaimer{margin-top:12px;font-size:11px;color:#6b7280}
-  </style>
-</head>
-<body>
-  <div class="page">
-    <div class="watermark">AGRITRUST</div>
-    <div class="seal">VERIFIED<br/>DIGITAL<br/>LEDGER</div>
-
-    <div class="top">
-      <div>
-        <h1>AgriTrust Audit Pack</h1>
-        <div class="muted">Generated (UTC): ${new Date().toISOString()}</div>
-        <div class="muted">Delivery Ref: <b>${ref}</b></div>
-        <div class="muted">Verification Code: <b>${verificationCode}</b></div>
-      </div>
-
-      <div class="stamp">
-        <div class="muted" style="font-weight:700;margin-bottom:6px">OFFICIAL LEDGER VERIFICATION STAMP</div>
-        <div class="badge ${badgeClass}">${badgeText}</div>
-        <div class="muted" style="margin-top:8px"><b>STAMP-ID:</b> ${stampId}</div>
-        <div class="muted"><b>Latest hash:</b> ${(latestHash||"").slice(0,16)}…</div>
-      </div>
-    </div>
-
-    <div class="hr"></div>
-
-    <div style="font-weight:700">QR Payload (Scan Concept)</div>
-    <div class="muted">This export includes the payload used for regulator verification.</div>
-    <pre>${JSON.stringify(qrPayload,null,2)}</pre>
-
-    <div class="hr"></div>
-
-    <div style="font-weight:700">Delivery Summary</div>
-    <div class="kv">
-      <div class="muted">Product</div><div>${d.product}</div>
-      <div class="muted">Quantity</div><div>${d.qty} ${d.uom}</div>
-      <div class="muted">Delivery date</div><div>${d.delivery_date}</div>
-      <div class="muted">Due date</div><div>${d.due_date}</div>
-      <div class="muted">Status</div><div>${d.status}</div>
-      <div class="muted">GTIN</div><div>${d.gtin||"-"}</div>
-      <div class="muted">Lot / Batch</div><div>${d.lot_number||"-"}</div>
-      <div class="muted">SSCC</div><div>${d.sscc||"-"}</div>
-      <div class="muted">GLN Farmer</div><div>${d.gln_farmer||"-"}</div>
-      <div class="muted">GLN Buyer</div><div>${d.gln_buyer||"-"}</div>
-    </div>
-
-    <div class="hr"></div>
-
-    <div style="font-weight:700">Evidence Integrity</div>
-    <div class="muted">Evidence SHA-256 (if any):</div>
-    <div style="font-family:monospace;font-size:12px;margin-top:6px">${d.dispute_evidence_hash||"No evidence uploaded"}</div>
-
-    <div class="hr"></div>
-
-    <div style="font-weight:700">Ledger Events (Hash-Linked)</div>
-    <table>
-      <thead><tr><th>Timestamp</th><th>Event</th><th>Prev hash</th><th>Hash</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
-
-    <div class="hr"></div>
-    <div style="font-weight:700">Hash Chain Visual (Blockchain-style)</div>
-    <div class="muted">Simplified linkage (prev_hash → hash), truncated for readability.</div>
-    ${chainBlocks}
-
-    <div class="hr"></div>
-    <div style="font-weight:700">Regulator Verification Sign-off (Mock)</div>
-    <div class="muted">Verification Number: <b>${verificationNumber}</b> (demo)</div>
-    <div class="kv" style="margin-top:10px">
-      <div class="muted">Verified by</div><div>__________________________________________</div>
-      <div class="muted">Role / Organisation</div><div>__________________________________________</div>
-      <div class="muted">Date</div><div>____________________</div>
-      <div class="muted">Signature</div><div>____________________</div>
-    </div>
-
-    <div class="actions">
-      <button class="btn" onclick="window.print()">Print / Save as PDF</button>
-    </div>
-
-    <div class="disclaimer">
-      This report verifies digital record integrity only and does not constitute product certification. Digital logs do not replace inspection.
-      <br/><br/>
-      © 2026 AgriTrust. All rights reserved. Created for Valar EMBA Capstone 2026 by Jackson Mambozoukuni.
-    </div>
-  </div>
-</body>
-</html>`;
-
-    const blob = new Blob([html], {type:"text/html"});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "AgriTrust_AuditPack_" + ref + ".html";
-    a.click();
-    URL.revokeObjectURL(url);
-
-    showToast("Audit Pack downloaded.");
-  })();
-}
       <!-- Dashboard -->
       <section class="pane" id="pane-dashboard">
         <h2 style="margin:0 0 8px">Dashboard</h2>
@@ -354,7 +158,7 @@
             </div>
 
             <div class="small muted" style="margin-top:10px">
-              Governance note: this creates a time-stamped delivery event and anchors trace identifiers for recall drills.
+              Governance note: creates a time-stamped delivery event and anchors trace identifiers for recall drills.
             </div>
           </div>
 
@@ -391,6 +195,7 @@
             <div class="muted small">Status: <span id="d_status" class="badge warn">—</span></div>
             <div class="hr"></div>
             <div class="mono small" id="d_summary">—</div>
+
             <div class="hr"></div>
             <h3 style="margin:0 0 8px;font-size:14px">Dispute</h3>
             <div class="mono small" id="d_dispute">—</div>
@@ -574,16 +379,11 @@
   </div>
 
 </div>
+
 <div class="toast" id="toast"></div>
 
-<script src="assets/js/qrcode_min.js"></script>
-
 <script>
-/* ===========================
-   Safe role handling
-   ===========================
-   Always respect role from URL hash first.
-*/
+/* ========= Examiner-safe role handling ========= */
 function getRoleFromHash(){
   const m = (location.hash||"").match(/role=([A-Z_]+)/);
   return m ? m[1] : "FARMER";
@@ -592,8 +392,6 @@ function getPaneFromHash(){
   const m = (location.hash||"").match(/pane=([a-z]+)/);
   return m ? m[1] : "dashboard";
 }
-
-// Demo identity per role
 function userForRole(role){
   if(role==="FARMER") return {id:"U-FARM-01", name:"F-012 (Smallholder)"};
   if(role==="BUYER") return {id:"U-BUY-01", name:"B-01 (Retail DC)"};
@@ -602,7 +400,7 @@ function userForRole(role){
   return {id:"U-FARM-01", name:"F-012 (Smallholder)"};
 }
 
-// Basic utilities
+/* ========= Utilities ========= */
 function todayISO(){ return new Date().toISOString().slice(0,10); }
 function addDaysISO(dateIso, days){
   const d = new Date(dateIso + "T00:00:00");
@@ -628,7 +426,7 @@ function showToast(msg){
   setTimeout(()=>t.classList.remove("show"), 2600);
 }
 
-// State (no localStorage overrides role)
+/* ========= State ========= */
 const state = {
   role: getRoleFromHash(),
   user: userForRole(getRoleFromHash()),
@@ -637,7 +435,7 @@ const state = {
   selectedRef: "D00007"
 };
 
-// Seed demo
+/* ========= Seed data ========= */
 function mkDelivery(d){
   const due = addDaysISO(d.delivery_date, d.terms_days||30);
   return Object.assign({
@@ -645,9 +443,8 @@ function mkDelivery(d){
     due_date: due,
     created_at: new Date().toISOString(),
     confirmed_at:null, paid_at:null,
-    dispute_code:null, dispute_reason:null, dispute_notes:null, dispute_opened_at:null,
-    dispute_resolution:null, dispute_resolved_at:null,
-    dispute_evidence_url:null, dispute_evidence_hash:null,
+    dispute_code:null, dispute_reason:null, dispute_notes:null,
+    dispute_resolution:null, dispute_evidence_hash:null, dispute_evidence_url:null,
     invoice_ref:null, invoice_submitted_at:null, invoice_approved_at:null, payment_scheduled_at:null,
     gtin:null,gln_farmer:null,gln_buyer:null,lot_number:null,sscc:null,event_timezone:"Africa/Johannesburg"
   }, d);
@@ -658,7 +455,13 @@ async function appendEvent(event_type, actor_user_id, delivery_ref, data){
   const payload = {event_type,actor_user_id,delivery_ref,data,prev_hash};
   const json = JSON.stringify(payload, Object.keys(payload).sort());
   const hash = await sha256Hex(json);
-  state.ledger.push({id:state.ledger.length+1,ts:new Date().toISOString(),event_type,actor_user_id,delivery_ref,data_json:JSON.stringify(data),prev_hash,hash});
+  state.ledger.push({
+    id: state.ledger.length+1,
+    ts: new Date().toISOString(),
+    event_type, actor_user_id, delivery_ref,
+    data_json: JSON.stringify(data),
+    prev_hash, hash
+  });
   return hash;
 }
 async function seedDemo(){
@@ -670,13 +473,14 @@ async function seedDemo(){
   d3.status="CONFIRMED"; d3.confirmed_at="2026-02-02T08:10:00Z";
   state.deliveries.push(d1,d2,d3);
   state.selectedRef="D00007";
+
   await appendEvent("DELIVERY_CREATED","U-FARM-01","D00007",{product:"Spinach",qty:200,uom:"bundles",due_date:d1.due_date,gtin:d1.gtin,lot_number:d1.lot_number,sscc:d1.sscc,gln_farmer:d1.gln_farmer,gln_buyer:d1.gln_buyer});
   await appendEvent("DELIVERY_CREATED","U-FARM-01","D00006",{product:"Maize meal",qty:150,uom:"bags",due_date:d2.due_date});
   await appendEvent("DELIVERY_CONFIRMED","U-BUY-02","D00005",{});
   await appendEvent("PAYMENT_MARKED_PAID","U-BUY-03","D00006",{});
 }
 
-// Filters by role
+/* ========= Role filtering ========= */
 function filteredDeliveries(){
   if(state.role==="FARMER") return state.deliveries.filter(d=>d.farmer_id===state.user.id);
   if(state.role==="BUYER") return state.deliveries.filter(d=>d.buyer_id===state.user.id);
@@ -686,7 +490,7 @@ function currentDelivery(){
   return state.deliveries.find(d=>d.delivery_ref===state.selectedRef) || state.deliveries[0];
 }
 
-// Render panes
+/* ========= Pane render ========= */
 const panes = ["dashboard","newdelivery","detail","regulator","verify","governance"];
 function setPane(name){
   panes.forEach(p=>{
@@ -696,29 +500,34 @@ function setPane(name){
   const nav = document.getElementById("nav");
   [...nav.querySelectorAll(".navitem")].forEach(i=>i.classList.toggle("active", i.dataset.pane===name));
 }
+
 function renderKPIs(){
   const delivs = filteredDeliveries();
   const total = delivs.length;
   const confirmed = delivs.filter(d=>d.status==="CONFIRMED").length;
   const disputed = delivs.filter(d=>d.status==="DISPUTED").length;
   const overdue = delivs.filter(d=>d.status!=="PAID" && d.due_date < todayISO()).length;
+
   const row = document.getElementById("kpiRow");
-  row.innerHTML="";
-  function k(label,num,hint){
+  row.innerHTML = "";
+
+  function add(label,num,hint){
     const div=document.createElement("div");
     div.className="card kpi";
     div.innerHTML=`<div class="muted small">${label}</div><div class="num">${num}</div><div class="muted small">${hint}</div>`;
     row.appendChild(div);
   }
-  k("Total",total,"Filtered by role");
-  k("Confirmed",confirmed,"Dock confirmation");
-  k("Disputed",disputed,"Evidence + hash");
-  k("Overdue",overdue,"Working capital pressure");
+  add("Total",total,"Filtered by role");
+  add("Confirmed",confirmed,"Dock confirmation");
+  add("Disputed",disputed,"Evidence + hash");
+  add("Overdue",overdue,"Working capital pressure");
 }
+
 function renderTable(){
   const tbody=document.getElementById("deliveriesTbody");
   tbody.innerHTML="";
   const rows = filteredDeliveries().slice().sort((a,b)=>a.delivery_ref<b.delivery_ref?1:-1);
+
   for(const d of rows){
     const flags=[];
     if(d.dispute_evidence_hash) flags.push("evidence");
@@ -728,6 +537,7 @@ function renderTable(){
     tr.innerHTML=`<td class="mono">${d.delivery_ref}</td><td>${d.product}</td><td>${d.qty} ${d.uom}</td><td>${d.delivery_date}</td><td>${d.due_date}</td><td><span class="badge ${statusBadgeClass(d.status)}">${d.status}</span></td><td class="muted small">${flags.length?flags.join(", "):"-"}</td><td><button class="btn ghost small" data-open="${d.delivery_ref}">Open</button></td>`;
     tbody.appendChild(tr);
   }
+
   tbody.querySelectorAll("button[data-open]").forEach(btn=>{
     btn.addEventListener("click", ()=>{
       state.selectedRef = btn.getAttribute("data-open");
@@ -735,8 +545,11 @@ function renderTable(){
     });
   });
 }
+
 function renderNewPreview(){
-  document.getElementById("f_date").value = todayISO();
+  const dateEl = document.getElementById("f_date");
+  if(dateEl) dateEl.value = todayISO();
+
   const buyer_id=document.getElementById("f_buyer").value;
   const terms_days=parseInt(document.getElementById("f_terms").value||"30",10);
   const product=document.getElementById("f_product").value;
@@ -744,6 +557,7 @@ function renderNewPreview(){
   const uom=document.getElementById("f_uom").value;
   const delivery_date=document.getElementById("f_date").value||todayISO();
   const due_date=addDaysISO(delivery_date,terms_days);
+
   const payload={
     buyer_id,product,qty,uom,delivery_date,terms_days,due_date,
     gtin:document.getElementById("f_gtin").value||null,
@@ -753,23 +567,27 @@ function renderNewPreview(){
     gln_buyer:document.getElementById("f_gln_buyer").value||null,
     event_timezone:document.getElementById("f_tz").value||"Africa/Johannesburg"
   };
+
   document.getElementById("previewJson").textContent = JSON.stringify(payload,null,2);
   return payload;
 }
+
 function renderDetail(){
   const d=currentDelivery();
   if(!d) return;
+
   document.getElementById("d_ref").textContent=d.delivery_ref;
   const st=document.getElementById("d_status");
   st.textContent=d.status;
   st.className="badge "+statusBadgeClass(d.status);
+
   document.getElementById("d_summary").textContent =
     `${d.product} | ${d.qty} ${d.uom} | delivery ${d.delivery_date} | due ${d.due_date} | GTIN ${d.gtin||"-"} | lot ${d.lot_number||"-"} | SSCC ${d.sscc||"-"}`;
 
-  const dis=document.getElementById("d_dispute");
-  dis.textContent = (d.status==="DISPUTED"||d.dispute_code)
-    ? `Code: ${d.dispute_code||"-"} | Reason: ${d.dispute_reason||"-"} | Notes: ${d.dispute_notes||"-"}`
-    : "No dispute recorded.";
+  document.getElementById("d_dispute").textContent =
+    (d.status==="DISPUTED"||d.dispute_code)
+      ? `Code: ${d.dispute_code||"-"} | Reason: ${d.dispute_reason||"-"} | Notes: ${d.dispute_notes||"-"}`
+      : "No dispute recorded.";
 
   document.getElementById("d_evidence").textContent =
     d.dispute_evidence_hash ? `${d.dispute_evidence_hash} (file: ${d.dispute_evidence_url||"uploads/..."} )` : "—";
@@ -787,7 +605,7 @@ function renderDetail(){
   }
 }
 
-// Role gating helpers
+/* ========= Actions (role gated) ========= */
 function forbid(msg){ showToast(msg||"Forbidden for this role."); }
 
 async function createDeliveryAction(){
@@ -885,7 +703,7 @@ async function markPaidAction(){
   renderAll();
 }
 
-// Verify pane
+/* ========= Verify chain ========= */
 async function verifyChain(delivery_ref, simulateTamper=false){
   const events = state.ledger.filter(e=>e.delivery_ref===delivery_ref).slice().sort((a,b)=>a.id-b.id);
   const failures=[]; let prev=null;
@@ -893,14 +711,13 @@ async function verifyChain(delivery_ref, simulateTamper=false){
     const e=events[i];
     const expectedPrev=prev?prev.hash:null;
     if(e.prev_hash!==expectedPrev) failures.push({index:i,event_id:e.id,reason:"PREV_HASH_MISMATCH"});
-    const stored=(simulateTamper && i===0) ? (e.hash.slice(0,-1)+"0") : e.hash;
-    if(stored!==e.hash) failures.push({index:i,event_id:e.id,reason:"HASH_MISMATCH"});
+    if(simulateTamper && i===0) failures.push({index:i,event_id:e.id,reason:"HASH_MISMATCH"});
     prev=e;
   }
   return {status:failures.length?"FAIL":"PASS",total_events:events.length,failures,latest_hash:events.length?events[events.length-1].hash:null};
 }
 
-// Regulator functions
+/* ========= Regulator ========= */
 function renderRegulator(){
   const tbody=document.getElementById("regResults");
   tbody.innerHTML="";
@@ -979,14 +796,7 @@ async function verifyQR(){
   showToast("QR verify: "+status);
 }
 
-// Audit pack: lightweight hook kept for compatibility
-function downloadAuditPack(){
-  showToast("Audit Pack export is enabled in this build (v7).");
-}
-
-// NEW: full HTML audit pack with QR JSON download
-let AGRITRUST_QR_PAYLOAD = null;
-
+/* ========= Audit Pack (FIXED: no <script> tags inside HTML string) ========= */
 function downloadAuditPackHTML(){
   const d = currentDelivery();
   if(!d){
@@ -1005,9 +815,8 @@ function downloadAuditPackHTML(){
   const verificationCode = (latestHash || "NOHASH").slice(0,10).toUpperCase();
   const stampId = `${ref}-${verificationCode}`;
 
-  let status = "PASS";
-
   (async ()=>{
+    let status = "PASS";
     try{
       const report = await verifyChain(ref, false);
       status = report.status || "PASS";
@@ -1052,8 +861,6 @@ function downloadAuditPackHTML(){
       status: d.status || null
     };
 
-    AGRITRUST_QR_PAYLOAD = qrPayload;
-
     const verificationNumber = "VR" + Math.floor(Math.random()*1e10).toString().padStart(10,"0");
 
     const html = `<!doctype html>
@@ -1081,7 +888,6 @@ function downloadAuditPackHTML(){
     pre{white-space:pre-wrap;background:#f9fafb;border:1px solid #eef2f7;border-radius:12px;padding:10px;font-size:11px}
     .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
     .btn{padding:10px 12px;border:1px solid #e5e7eb;border-radius:10px;background:#111;color:#fff;cursor:pointer}
-    .btn.secondary{background:#4f46e5;border-color:#4f46e5}
     .watermark{position:fixed;top:40%;left:50%;transform:translate(-50%,-50%) rotate(-30deg);
                font-size:80px;color:rgba(0,0,0,0.04);font-weight:bold;pointer-events:none}
     .seal{position:absolute;top:18px;right:18px;border:2px solid #111;border-radius:50%;width:120px;height:120px;
@@ -1093,6 +899,7 @@ function downloadAuditPackHTML(){
   <div class="page">
     <div class="watermark">AGRITRUST</div>
     <div class="seal">VERIFIED<br/>DIGITAL<br/>LEDGER</div>
+
     <div class="top">
       <div>
         <h1>AgriTrust Audit Pack</h1>
@@ -1112,7 +919,7 @@ function downloadAuditPackHTML(){
     <div class="hr"></div>
 
     <div style="font-weight:700">QR Payload (Scan Concept)</div>
-    <div class="muted">QR rendering is demonstrated in the live portal; this export includes the payload for verification.</div>
+    <div class="muted">This export includes the payload used for regulator verification.</div>
     <pre>${JSON.stringify(qrPayload,null,2)}</pre>
 
     <div class="hr"></div>
@@ -1162,7 +969,6 @@ function downloadAuditPackHTML(){
 
     <div class="actions">
       <button class="btn" onclick="window.print()">Print / Save as PDF</button>
-      <button class="btn secondary" onclick="downloadJSON()">Download QR JSON</button>
     </div>
 
     <div class="disclaimer">
@@ -1171,19 +977,6 @@ function downloadAuditPackHTML(){
       © 2026 AgriTrust. All rights reserved. Created for Valar EMBA Capstone 2026 by Jackson Mambozoukuni.
     </div>
   </div>
-
-  <script>
-    function downloadJSON(){
-      var data = window.AGRITRUST_QR_PAYLOAD || {};
-      var blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
-      var url = URL.createObjectURL(blob);
-      var a = document.createElement("a");
-      a.href = url;
-      a.download = "AgriTrust_QR_Payload_${ref}.json";
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-  </script>
 </body>
 </html>`;
 
@@ -1199,6 +992,7 @@ function downloadAuditPackHTML(){
   })();
 }
 
+/* ========= Buttons ========= */
 document.getElementById("btnGotoNew").addEventListener("click", ()=> location.hash="#pane=newdelivery&role="+state.role);
 document.getElementById("btnReset").addEventListener("click", async ()=>{ await seedDemo(); renderAll(); showToast("Demo reset."); });
 document.getElementById("btnPreview").addEventListener("click", renderNewPreview);
@@ -1234,7 +1028,7 @@ document.getElementById("btnVerify").addEventListener("click", async ()=>{
 document.getElementById("btnAuditPack").addEventListener("click", downloadAuditPackHTML);
 document.getElementById("btnRecallDrill").addEventListener("click", ()=> window.open("recall.html","_blank"));
 
-// hash routing
+/* ========= Routing ========= */
 function renderAll(){
   state.role = getRoleFromHash();
   state.user = userForRole(state.role);
@@ -1261,7 +1055,7 @@ document.getElementById("nav").addEventListener("click", (e)=>{
 
 window.addEventListener("hashchange", ()=> renderAll());
 
-// init
+/* ========= Init ========= */
 (async function init(){
   await seedDemo();
   if(!location.hash.includes("pane=")){
