@@ -195,7 +195,6 @@
             <div class="muted small">Status: <span id="d_status" class="badge warn">—</span></div>
             <div class="hr"></div>
             <div class="mono small" id="d_summary">—</div>
-
             <div class="hr"></div>
             <h3 style="margin:0 0 8px;font-size:14px">Dispute</h3>
             <div class="mono small" id="d_dispute">—</div>
@@ -379,7 +378,6 @@
   </div>
 
 </div>
-
 <div class="toast" id="toast"></div>
 
 <script src="assets/js/qrcode_min.js"></script>
@@ -785,45 +783,13 @@ async function verifyQR(){
   showToast("QR verify: "+status);
 }
 
-// Audit pack: open existing v7 audit pack generator if you kept it in ui.js before; for now open the v7 pack route in your build
+// Audit pack: lightweight hook kept for compatibility
 function downloadAuditPack(){
-  // This is a lightweight hook; if you need the full board-ready audit pack generator, we can reinsert it here.
   showToast("Audit Pack export is enabled in this build (v7).");
 }
 
-// Event wiring
-document.getElementById("btnGotoNew").addEventListener("click", ()=> location.hash="#pane=newdelivery&role="+state.role);
-document.getElementById("btnReset").addEventListener("click", async ()=>{ await seedDemo(); renderAll(); showToast("Demo reset."); });
-document.getElementById("btnPreview").addEventListener("click", renderNewPreview);
-document.getElementById("btnCancelNew").addEventListener("click", ()=> location.hash="#pane=dashboard&role="+state.role);
-
-document.getElementById("btnCreateDelivery").addEventListener("click", createDeliveryAction);
-
-document.getElementById("btnConfirm").addEventListener("click", confirmAction);
-document.getElementById("btnDispute").addEventListener("click", disputeAction);
-document.getElementById("btnUpload").addEventListener("click", uploadEvidenceAction);
-document.getElementById("btnResolve").addEventListener("click", resolveDisputeAction);
-document.getElementById("btnSubmitInvoice").addEventListener("click", submitInvoiceAction);
-document.getElementById("btnApproveInvoice").addEventListener("click", approveInvoiceAction);
-document.getElementById("btnSchedule").addEventListener("click", schedulePaymentAction);
-document.getElementById("btnPaid").addEventListener("click", markPaidAction);
-
-document.getElementById("btnBackDash").addEventListener("click", ()=> location.hash="#pane=dashboard&role="+state.role);
-
-document.getElementById("btnSearch").addEventListener("click", renderRegulator);
-document.getElementById("btnResetFilters").addEventListener("click", ()=>{["r_gtin","r_lot","r_gln_farmer","r_gln_buyer"].forEach(id=>document.getElementById(id).value=""); renderRegulator();});
-document.getElementById("btnExportCsv").addEventListener("click", exportCsv);
-document.getElementById("btnUseCurrentQR").addEventListener("click", useCurrentQR);
-document.getElementById("btnVerifyQR").addEventListener("click", verifyQR);
-
-document.getElementById("btnVerify").addEventListener("click", async ()=>{
-  const ref=document.getElementById("v_ref").value.trim() || state.selectedRef;
-  const mode=document.getElementById("v_mode").value;
-  const report=await verifyChain(ref, mode==="tamper");
-  report.verification_code=(report.latest_hash||"NOHASH").slice(0,10).toUpperCase();
-  document.getElementById("verifyReport").textContent=JSON.stringify(report,null,2);
-  showToast("Verify: "+report.status);
-});
+// NEW: full HTML audit pack with QR JSON download
+let AGRITRUST_QR_PAYLOAD = null;
 
 function downloadAuditPackHTML(){
   const d = currentDelivery();
@@ -832,31 +798,19 @@ function downloadAuditPackHTML(){
     return;
   }
 
-  // Use the ledger verify logic you already have (normal verify)
-  // We use the selected ref so it matches what the examiner opened.
   const ref = d.delivery_ref;
 
-  // Build ledger rows
   const events = state.ledger
     .filter(e => e.delivery_ref === ref)
     .slice()
-    .reverse(); // show latest first (readable)
+    .reverse();
 
   const latestHash = events.length ? (events[0].hash || "") : "";
   const verificationCode = (latestHash || "NOHASH").slice(0,10).toUpperCase();
   const stampId = `${ref}-${verificationCode}`;
 
-  // Determine PASS/FAIL using your verifyChain() (normal mode)
-  // If verifyChain throws or is unavailable, default to PASS for demo.
   let status = "PASS";
-  try{
-    // verifyChain returns {status:"PASS"/"FAIL"...}
-    // Note: verifyChain in this file is async, so we handle it here safely
-  }catch(e){
-    status = "PASS";
-  }
 
-  // Because verifyChain is async in your file, do the async call properly:
   (async ()=>{
     try{
       const report = await verifyChain(ref, false);
@@ -868,7 +822,6 @@ function downloadAuditPackHTML(){
     const badgeClass = (status === "PASS") ? "good" : "bad";
     const badgeText  = (status === "PASS") ? "PASS ✅" : "FAIL ❌";
 
-    // Ledger table (latest 30 rows)
     const rows = events.slice(0,30).map(e => `
       <tr>
         <td>${String(e.ts||"").slice(0,19)}</td>
@@ -878,7 +831,6 @@ function downloadAuditPackHTML(){
       </tr>
     `).join("");
 
-    // Hash chain visual blocks (top 10)
     const chainBlocks = events.slice(0,10).reverse().map((e,i,arr)=>`
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px">
         <div style="border:1px solid #e5e7eb;border-radius:12px;padding:8px 10px;background:#fff;font-family:monospace;font-size:11px;min-width:200px">
@@ -890,7 +842,6 @@ function downloadAuditPackHTML(){
       </div>
     `).join("");
 
-    // QR payload shown as JSON (rendering QR in downloaded file is optional)
     const qrPayload = {
       schema_version: "1.0",
       delivery_ref: ref,
@@ -904,6 +855,8 @@ function downloadAuditPackHTML(){
       due_date: d.due_date || null,
       status: d.status || null
     };
+
+    AGRITRUST_QR_PAYLOAD = qrPayload;
 
     const verificationNumber = "VR" + Math.floor(Math.random()*1e10).toString().padStart(10,"0");
 
@@ -944,7 +897,6 @@ function downloadAuditPackHTML(){
   <div class="page">
     <div class="watermark">AGRITRUST</div>
     <div class="seal">VERIFIED<br/>DIGITAL<br/>LEDGER</div>
-
     <div class="top">
       <div>
         <h1>AgriTrust Audit Pack</h1>
@@ -1026,7 +978,8 @@ function downloadAuditPackHTML(){
 
   <script>
     function downloadJSON(){
-      var blob = new Blob([JSON.stringify(${JSON.stringify(qrPayload)}, null, 2)], {type:"application/json"});
+      var data = window.AGRITRUST_QR_PAYLOAD || {};
+      var blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
       var url = URL.createObjectURL(blob);
       var a = document.createElement("a");
       a.href = url;
@@ -1049,6 +1002,38 @@ function downloadAuditPackHTML(){
     showToast("Audit Pack downloaded.");
   })();
 }
+
+document.getElementById("btnGotoNew").addEventListener("click", ()=> location.hash="#pane=newdelivery&role="+state.role);
+document.getElementById("btnReset").addEventListener("click", async ()=>{ await seedDemo(); renderAll(); showToast("Demo reset."); });
+document.getElementById("btnPreview").addEventListener("click", renderNewPreview);
+document.getElementById("btnCancelNew").addEventListener("click", ()=> location.hash="#pane=dashboard&role="+state.role);
+
+document.getElementById("btnCreateDelivery").addEventListener("click", createDeliveryAction);
+document.getElementById("btnConfirm").addEventListener("click", confirmAction);
+document.getElementById("btnDispute").addEventListener("click", disputeAction);
+document.getElementById("btnUpload").addEventListener("click", uploadEvidenceAction);
+document.getElementById("btnResolve").addEventListener("click", resolveDisputeAction);
+document.getElementById("btnSubmitInvoice").addEventListener("click", submitInvoiceAction);
+document.getElementById("btnApproveInvoice").addEventListener("click", approveInvoiceAction);
+document.getElementById("btnSchedule").addEventListener("click", schedulePaymentAction);
+document.getElementById("btnPaid").addEventListener("click", markPaidAction);
+
+document.getElementById("btnBackDash").addEventListener("click", ()=> location.hash="#pane=dashboard&role="+state.role);
+
+document.getElementById("btnSearch").addEventListener("click", renderRegulator);
+document.getElementById("btnResetFilters").addEventListener("click", ()=>{["r_gtin","r_lot","r_gln_farmer","r_gln_buyer"].forEach(id=>document.getElementById(id).value=""); renderRegulator();});
+document.getElementById("btnExportCsv").addEventListener("click", exportCsv);
+document.getElementById("btnUseCurrentQR").addEventListener("click", useCurrentQR);
+document.getElementById("btnVerifyQR").addEventListener("click", verifyQR);
+
+document.getElementById("btnVerify").addEventListener("click", async ()=>{
+  const ref=document.getElementById("v_ref").value.trim() || state.selectedRef;
+  const mode=document.getElementById("v_mode").value;
+  const report=await verifyChain(ref, mode==="tamper");
+  report.verification_code=(report.latest_hash||"NOHASH").slice(0,10).toUpperCase();
+  document.getElementById("verifyReport").textContent=JSON.stringify(report,null,2);
+  showToast("Verify: "+report.status);
+});
 
 document.getElementById("btnAuditPack").addEventListener("click", downloadAuditPackHTML);
 document.getElementById("btnRecallDrill").addEventListener("click", ()=> window.open("recall.html","_blank"));
@@ -1083,7 +1068,6 @@ window.addEventListener("hashchange", ()=> renderAll());
 // init
 (async function init(){
   await seedDemo();
-  // force pane default only (do NOT override role)
   if(!location.hash.includes("pane=")){
     location.hash = "#pane=dashboard&role=" + state.role;
   }
