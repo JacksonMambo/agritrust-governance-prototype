@@ -50,6 +50,202 @@
     <!-- Main -->
     <main>
 
+      function downloadAuditPackHTML(){
+  const d = currentDelivery();
+  if(!d){
+    showToast("No delivery selected.");
+    return;
+  }
+
+  const ref = d.delivery_ref;
+
+  const events = state.ledger
+    .filter(e => e.delivery_ref === ref)
+    .slice()
+    .reverse();
+
+  const latestHash = events.length ? (events[0].hash || "") : "";
+  const verificationCode = (latestHash || "NOHASH").slice(0,10).toUpperCase();
+  const stampId = `${ref}-${verificationCode}`;
+
+  (async ()=>{
+    let status = "PASS";
+    try{
+      const report = await verifyChain(ref, false);
+      status = report.status || "PASS";
+    }catch(e){
+      status = "PASS";
+    }
+
+    const badgeClass = (status === "PASS") ? "good" : "bad";
+    const badgeText  = (status === "PASS") ? "PASS ✅" : "FAIL ❌";
+
+    const rows = events.slice(0,30).map(e => `
+      <tr>
+        <td>${String(e.ts||"").slice(0,19)}</td>
+        <td>${e.event_type||""}</td>
+        <td>${String(e.prev_hash||"").slice(0,16)}</td>
+        <td>${String(e.hash||"").slice(0,16)}</td>
+      </tr>
+    `).join("");
+
+    const chainBlocks = events.slice(0,10).reverse().map((e,i,arr)=>`
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px">
+        <div style="border:1px solid #e5e7eb;border-radius:12px;padding:8px 10px;background:#fff;font-family:monospace;font-size:11px;min-width:200px">
+          <div><b>#${i+1}</b> ${e.event_type||""}</div>
+          <div style="color:#6b7280;font-family:Arial;font-size:10px">prev: ${(e.prev_hash||"-").slice(0,10)}</div>
+          <div style="color:#6b7280;font-family:Arial;font-size:10px">hash: ${(e.hash||"-").slice(0,10)}</div>
+        </div>
+        ${i < arr.length-1 ? `<div style="font-size:18px;color:#6b7280">→</div>` : ``}
+      </div>
+    `).join("");
+
+    const qrPayload = {
+      schema_version: "1.0",
+      delivery_ref: ref,
+      latest_hash: latestHash,
+      gtin: d.gtin || null,
+      lot_number: d.lot_number || null,
+      sscc: d.sscc || null,
+      gln_farmer: d.gln_farmer || null,
+      gln_buyer: d.gln_buyer || null,
+      delivery_date: d.delivery_date || null,
+      due_date: d.due_date || null,
+      status: d.status || null
+    };
+
+    const verificationNumber = "VR" + Math.floor(Math.random()*1e10).toString().padStart(10,"0");
+
+    // IMPORTANT: NO <script> tags in this HTML string (prevents breaking the portal page)
+    const html = `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>AgriTrust Audit Pack — ${ref}</title>
+  <style>
+    body{font-family:Arial;margin:0;background:#f7f7fb;color:#111}
+    .page{max-width:980px;margin:22px auto;background:#fff;border:1px solid #e5e7eb;border-radius:16px;
+          box-shadow:0 12px 40px rgba(0,0,0,.08);padding:18px;position:relative}
+    h1{margin:0;font-size:20px}
+    .muted{color:#6b7280;font-size:12px}
+    .top{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .stamp{border:1px solid #e5e7eb;border-radius:14px;padding:10px;min-width:260px}
+    .badge{display:inline-block;padding:6px 10px;border-radius:999px;font-weight:700}
+    .good{background:#d1fae5;color:#065f46;border:1px solid #34d399}
+    .bad{background:#fee2e2;color:#991b1b;border:1px solid #fb7185}
+    .hr{height:1px;background:#e5e7eb;margin:14px 0}
+    .kv{display:grid;grid-template-columns:220px 1fr;gap:8px;margin-top:12px}
+    .kv div{padding:8px;border:1px solid #eef2f7;border-radius:12px;background:#fafafa;font-size:12px}
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    th,td{border:1px solid #eef2f7;padding:8px;font-size:12px;text-align:left;vertical-align:top}
+    th{background:#f3f4f6}
+    pre{white-space:pre-wrap;background:#f9fafb;border:1px solid #eef2f7;border-radius:12px;padding:10px;font-size:11px}
+    .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+    .btn{padding:10px 12px;border:1px solid #e5e7eb;border-radius:10px;background:#111;color:#fff;cursor:pointer}
+    .btn.secondary{background:#4f46e5;border-color:#4f46e5}
+    .watermark{position:fixed;top:40%;left:50%;transform:translate(-50%,-50%) rotate(-30deg);
+               font-size:80px;color:rgba(0,0,0,0.04);font-weight:bold;pointer-events:none}
+    .seal{position:absolute;top:18px;right:18px;border:2px solid #111;border-radius:50%;width:120px;height:120px;
+          display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;text-align:center}
+    .disclaimer{margin-top:12px;font-size:11px;color:#6b7280}
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="watermark">AGRITRUST</div>
+    <div class="seal">VERIFIED<br/>DIGITAL<br/>LEDGER</div>
+
+    <div class="top">
+      <div>
+        <h1>AgriTrust Audit Pack</h1>
+        <div class="muted">Generated (UTC): ${new Date().toISOString()}</div>
+        <div class="muted">Delivery Ref: <b>${ref}</b></div>
+        <div class="muted">Verification Code: <b>${verificationCode}</b></div>
+      </div>
+
+      <div class="stamp">
+        <div class="muted" style="font-weight:700;margin-bottom:6px">OFFICIAL LEDGER VERIFICATION STAMP</div>
+        <div class="badge ${badgeClass}">${badgeText}</div>
+        <div class="muted" style="margin-top:8px"><b>STAMP-ID:</b> ${stampId}</div>
+        <div class="muted"><b>Latest hash:</b> ${(latestHash||"").slice(0,16)}…</div>
+      </div>
+    </div>
+
+    <div class="hr"></div>
+
+    <div style="font-weight:700">QR Payload (Scan Concept)</div>
+    <div class="muted">This export includes the payload used for regulator verification.</div>
+    <pre>${JSON.stringify(qrPayload,null,2)}</pre>
+
+    <div class="hr"></div>
+
+    <div style="font-weight:700">Delivery Summary</div>
+    <div class="kv">
+      <div class="muted">Product</div><div>${d.product}</div>
+      <div class="muted">Quantity</div><div>${d.qty} ${d.uom}</div>
+      <div class="muted">Delivery date</div><div>${d.delivery_date}</div>
+      <div class="muted">Due date</div><div>${d.due_date}</div>
+      <div class="muted">Status</div><div>${d.status}</div>
+      <div class="muted">GTIN</div><div>${d.gtin||"-"}</div>
+      <div class="muted">Lot / Batch</div><div>${d.lot_number||"-"}</div>
+      <div class="muted">SSCC</div><div>${d.sscc||"-"}</div>
+      <div class="muted">GLN Farmer</div><div>${d.gln_farmer||"-"}</div>
+      <div class="muted">GLN Buyer</div><div>${d.gln_buyer||"-"}</div>
+    </div>
+
+    <div class="hr"></div>
+
+    <div style="font-weight:700">Evidence Integrity</div>
+    <div class="muted">Evidence SHA-256 (if any):</div>
+    <div style="font-family:monospace;font-size:12px;margin-top:6px">${d.dispute_evidence_hash||"No evidence uploaded"}</div>
+
+    <div class="hr"></div>
+
+    <div style="font-weight:700">Ledger Events (Hash-Linked)</div>
+    <table>
+      <thead><tr><th>Timestamp</th><th>Event</th><th>Prev hash</th><th>Hash</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+
+    <div class="hr"></div>
+    <div style="font-weight:700">Hash Chain Visual (Blockchain-style)</div>
+    <div class="muted">Simplified linkage (prev_hash → hash), truncated for readability.</div>
+    ${chainBlocks}
+
+    <div class="hr"></div>
+    <div style="font-weight:700">Regulator Verification Sign-off (Mock)</div>
+    <div class="muted">Verification Number: <b>${verificationNumber}</b> (demo)</div>
+    <div class="kv" style="margin-top:10px">
+      <div class="muted">Verified by</div><div>__________________________________________</div>
+      <div class="muted">Role / Organisation</div><div>__________________________________________</div>
+      <div class="muted">Date</div><div>____________________</div>
+      <div class="muted">Signature</div><div>____________________</div>
+    </div>
+
+    <div class="actions">
+      <button class="btn" onclick="window.print()">Print / Save as PDF</button>
+    </div>
+
+    <div class="disclaimer">
+      This report verifies digital record integrity only and does not constitute product certification. Digital logs do not replace inspection.
+      <br/><br/>
+      © 2026 AgriTrust. All rights reserved. Created for Valar EMBA Capstone 2026 by Jackson Mambozoukuni.
+    </div>
+  </div>
+</body>
+</html>`;
+
+    const blob = new Blob([html], {type:"text/html"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "AgriTrust_AuditPack_" + ref + ".html";
+    a.click();
+    URL.revokeObjectURL(url);
+
+    showToast("Audit Pack downloaded.");
+  })();
+}
       <!-- Dashboard -->
       <section class="pane" id="pane-dashboard">
         <h2 style="margin:0 0 8px">Dashboard</h2>
