@@ -1,0 +1,11 @@
+{
+  "name": "agritrust-governance-prototype",
+  "version": "8.0.0",
+  "private": true,
+  "description": "Static prototype of a tamper-evident event ledger for delivery, dispute and payment governance in deferred-payment agrifood supply chains.",
+  "scripts": {
+    "test": "node --test test/ledger.test.mjs"
+  },
+  "author": "Jackson Mambozoukuni",
+  "license": "MIT"
+}

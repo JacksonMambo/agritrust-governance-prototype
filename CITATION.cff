@@ -1,0 +1,39 @@
+cff-version: 1.2.0
+title: "AgriTrust: a governance-infrastructure prototype for agrifood risk and payment discipline"
+message: "If you use or refer to this software, please cite it as below."
+type: software
+authors:
+  - family-names: Mambozoukuni
+    given-names: Jackson
+    orcid: "https://orcid.org/0009-0009-9343-1910"
+    affiliation: "Auctus Agri"
+repository-code: "https://github.com/JacksonMambo/agritrust-governance-prototype"
+url: "https://jacksonmambo.github.io/agritrust-governance-prototype/"
+abstract: >-
+  A static, in-browser prototype demonstrating delivery capture, dispute
+  handling, evidence anchoring, invoice sequencing, regulator traceability and
+  a per-delivery tamper-evident event ledger for deferred-payment agrifood
+  supply chains. Developed to accompany an Executive MBA capstone and released
+  for open scrutiny.
+keywords:
+  - agrifood supply chains
+  - payment discipline
+  - tamper-evident ledger
+  - traceability
+  - GS1
+  - governance
+license: MIT
+version: 8.0.0
+date-released: "2026-08-23"
+references:
+  - type: article
+    authors:
+      - family-names: Mambozoukuni
+        given-names: Jackson
+    title: >-
+      When verification is not enough: institutional preconditions for
+      blockchain-enabled payment discipline in smallholder agricultural value chains
+    journal: "Frontiers in Sustainable Food Systems"
+    volume: 10
+    year: 2026
+    doi: "10.3389/fsufs.2026.1893984"
