@@ -4,8 +4,10 @@
 
 A working prototype of the coordination layer that deferred-payment agrifood supply chains lack: capture a delivery, contest it with evidence, sequence the invoice, and leave a per-delivery event chain that a regulator or auditor can verify independently.
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22067240.svg)](https://doi.org/10.5281/zenodo.22067240)
+
 **Live demo:** https://jacksonmambo.github.io/agritrust-governance-prototype/
-**Version:** 8.0.0 · **Ledger schema:** `agritrust.ledger/8.0.0` · **Licence:** MIT
+**Version:** 8.0.0 · **Ledger schema:** `agritrust.ledger/8.0.0` · **Licence:** MIT · **Archived:** [Zenodo](https://doi.org/10.5281/zenodo.22067240)
 
 ---
 
@@ -102,7 +104,9 @@ The prototype builds the verification layer that paper describes; the paper expl
 
 See [CITATION.cff](CITATION.cff), or:
 
-> Mambozoukuni, J. (2026). *AgriTrust: a governance-infrastructure prototype for agrifood risk and payment discipline* (v8.0.0). https://github.com/JacksonMambo/agritrust-governance-prototype
+> Mambozoukuni, J. (2026). *AgriTrust: a governance-infrastructure prototype for agrifood risk and payment discipline* (v8.0.0). Zenodo. https://doi.org/10.5281/zenodo.22067240
+
+The concept DOI [10.5281/zenodo.22067240](https://doi.org/10.5281/zenodo.22067240) always resolves to the latest archived version; [10.5281/zenodo.22067241](https://doi.org/10.5281/zenodo.22067241) is this release.
 
 ## Author
 
